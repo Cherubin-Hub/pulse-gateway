@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateSSOLaunchUrl } from "@/lib/sso/signer";
 import { cookies } from "next/headers";
 import { gatewayDb } from "@/lib/db";
+import type { TraderProfile } from "@/types/portal";
 
-interface GatewaySession {
-  id: string;
-  email: string;
-}
-
-// Default fallback registry in case the database is offline
 const FALLBACK_URLS: Record<string, string> = {
   "forex-pulse": process.env.FOREX_PULSE_URL || "http://localhost:3001",
 };
@@ -24,23 +19,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 1. Read the real authenticated user from session cookie
+  // 1. Read real authenticated trader profile from session cookie
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("pulse_gateway_user")?.value;
 
-  let session: GatewaySession = {
+  let session: TraderProfile = {
     id: "trader-uuid-001",
-    email: "trader@example.com",
+    email: "trader@pulse.institutional",
+    username: "trader",
+    firstName: "Demo",
+    lastName: "Trader",
+    displayName: "Demo Trader",
   };
 
   if (sessionCookie) {
     try {
-      const parsed = JSON.parse(sessionCookie) as GatewaySession;
+      const parsed = JSON.parse(sessionCookie) as TraderProfile;
       if (parsed.email) {
-        session = parsed;
+        session = { ...session, ...parsed };
       }
     } catch {
-      // Graceful fallback to default trader credentials
+      // Graceful fallback
     }
   }
 
@@ -64,10 +63,9 @@ export async function POST(request: NextRequest) {
       targetUrl = appData.url;
     }
   } catch {
-    // Database query failed, check static fallback
+    // Fallback if database fails
   }
 
-  // Use fallback if database didn't resolve target
   if (!targetUrl && FALLBACK_URLS[appSlug]) {
     targetUrl = FALLBACK_URLS[appSlug];
   }
@@ -79,11 +77,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Generate cryptographic SSO URL with trader payload
+  // 3. Generate cryptographic SSO URL with real trader name
   const user = {
     userId: session.id,
     email: session.email,
-    name: session.email.split("@")[0] || "Trader",
+    name: session.displayName || session.username || "Trader",
     appName: appSlug,
   };
 

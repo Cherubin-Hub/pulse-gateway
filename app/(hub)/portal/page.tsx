@@ -1,11 +1,13 @@
 import React from "react";
-import { AppCard } from "@/components/app-card";
-import type { ApplicationItem } from "@/types/portal";
-import { Layers, ShieldCheck, LogOut, UserCircle } from "lucide-react";
+import type { ApplicationItem, TraderProfile } from "@/types/portal";
+import { Layers } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { logoutGateway } from "@/app/actions/gatewayAuth";
 import { gatewayDb } from "@/lib/db";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { UserProfileMenu } from "@/components/user-profile-menu";
+import { SystemStatusBar } from "@/components/system-status-bar";
+import { PortalClientGrid } from "@/components/portal-client-grid";
 
 const DEFAULT_APPS: ApplicationItem[] = [
   {
@@ -44,6 +46,18 @@ const DEFAULT_APPS: ApplicationItem[] = [
     isComingSoon: true,
     category: "Analytics",
   },
+  {
+    id: "app-4",
+    slug: "quant-matrix",
+    name: "Quant Matrix",
+    description:
+      "Algorithmic Arbitrage Screener, Cointegration Engine, and Automated Cross-Pair Statistical Arbitrage.",
+    icon: "ShieldCheck",
+    url: "",
+    isActive: false,
+    isComingSoon: true,
+    category: "Quant",
+  },
 ];
 
 async function getApplications(): Promise<ApplicationItem[]> {
@@ -63,11 +77,11 @@ async function getApplications(): Promise<ApplicationItem[]> {
         url: item.url as string,
         isActive: Boolean(item.is_active),
         isComingSoon: Boolean(item.is_coming_soon),
-        category: "Trading",
+        category: (item.category as ApplicationItem["category"]) || "Trading",
       }));
     }
   } catch {
-    // Graceful offline fallback to default list
+    // Offline fallback
   }
   return DEFAULT_APPS;
 }
@@ -76,86 +90,74 @@ export default async function PortalPage() {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("pulse_gateway_user")?.value;
 
-  // 1. Guard route: If not authenticated, redirect to Login
   if (!sessionCookie) {
     redirect("/login");
   }
 
-  let userEmail = "trader@example.com";
+  let profile: TraderProfile = {
+    id: "trader-uuid-001",
+    email: "trader@pulse.institutional",
+    username: "trader",
+    firstName: "Demo",
+    lastName: "Trader",
+    displayName: "Demo Trader",
+  };
+
   try {
-    const parsed = JSON.parse(sessionCookie) as { email?: string };
+    const parsed = JSON.parse(sessionCookie) as TraderProfile;
     if (parsed.email) {
-      userEmail = parsed.email;
+      profile = {
+        ...profile,
+        ...parsed,
+      };
     }
   } catch {
     // Use fallback
   }
 
-  // 2. Fetch applications (Database with offline fallback)
   const applications = await getApplications();
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      {/* Top Navigation */}
-      <header className="border-b border-zinc-800 bg-zinc-950/60 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors">
+      {/* Top Header */}
+      <header className="border-b border-border bg-card/70 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="h-9 w-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-base font-semibold tracking-tight leading-none">
+            <h1 className="text-sm sm:text-base font-extrabold tracking-tight leading-none">
               Pulse Gateway
             </h1>
-            <p className="text-xs text-zinc-400 mt-0.5">Central Trading Hub</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+              Trading Hub & Single Sign-On Access
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs">
-            <ShieldCheck className="h-3.5 w-3.5" /> Single Sign-On Active
-          </div>
-
-          {/* User Email Badge */}
-          <div className="flex items-center gap-2 text-xs text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-lg">
-            <UserCircle className="h-4 w-4 text-emerald-400" />
-            <span className="font-mono">{userEmail}</span>
-          </div>
-
-          {/* Logout Action */}
-          <form action={logoutGateway}>
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-rose-400 transition-colors py-1.5 px-2.5 rounded-md hover:bg-zinc-900"
-            >
-              <LogOut className="h-3.5 w-3.5" /> Sign Out
-            </button>
-          </form>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <ThemeToggle />
+          <UserProfileMenu profile={profile} />
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Workspace Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-10 flex flex-col justify-center">
-        <div className="mb-10 text-center sm:text-left">
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            Select Your Application
+        <div className="mb-8 text-center sm:text-left">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            Welcome back, {profile.firstName || profile.displayName}
           </h2>
-          <p className="text-zinc-400 mt-2 text-sm sm:text-base">
-            Choose an authorized workspace to launch with secure Single Sign-On.
+          <p className="text-muted-foreground mt-2 text-xs sm:text-sm">
+            Select an authorized trading application to launch with secure Single Sign-On.
           </p>
         </div>
 
-        {/* Application Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {applications.map((app) => (
-            <AppCard key={app.id} app={app} />
-          ))}
-        </div>
+        {/* Dynamic Filter Grid */}
+        <PortalClientGrid applications={applications} />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-900 py-6 text-center text-xs text-zinc-500">
-        Forex Pulse Intelligence Network &bull; Pulse Gateway v1.0
-      </footer>
+      {/* Institutional Telemetry Footer */}
+      <SystemStatusBar />
     </div>
   );
 }
