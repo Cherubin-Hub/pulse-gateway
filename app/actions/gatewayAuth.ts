@@ -3,6 +3,7 @@
 import { gatewayDb } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { generateSSOLaunchUrl } from "@/lib/sso/signer";
 import type { TraderProfile } from "@/types/portal";
 
 export interface AuthActionResult {
@@ -16,6 +17,8 @@ export interface AuthActionResult {
 export async function loginToGateway(formData: FormData): Promise<AuthActionResult> {
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
+  const appSlug = (formData.get("app") as string)?.trim();
+  const returnTo = (formData.get("returnTo") as string)?.trim();
 
   if (!email || !password) {
     return { error: "Email and password are required." };
@@ -62,6 +65,21 @@ export async function loginToGateway(formData: FormData): Promise<AuthActionResu
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
 
+  if (appSlug === "forex-pulse") {
+    const targetUrl = process.env.FOREX_PULSE_URL || "http://localhost:3001";
+    const ssoUrl = generateSSOLaunchUrl(
+      targetUrl,
+      {
+        userId: profile.id,
+        email: profile.email,
+        name: profile.displayName || profile.username || "Trader",
+        appName: "forex-pulse",
+      },
+      returnTo || undefined
+    );
+    redirect(ssoUrl);
+  }
+
   redirect("/portal");
 }
 
@@ -76,6 +94,8 @@ export async function signUpToGateway(formData: FormData): Promise<AuthActionRes
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
+  const appSlug = (formData.get("app") as string)?.trim();
+  const returnTo = (formData.get("returnTo") as string)?.trim();
 
   if (!firstName || !lastName || !username || !email || !password) {
     return { error: "Please fill in all required fields." };
@@ -134,6 +154,21 @@ export async function signUpToGateway(formData: FormData): Promise<AuthActionRes
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 7 days
   });
+
+  if (appSlug === "forex-pulse") {
+    const targetUrl = process.env.FOREX_PULSE_URL || "http://localhost:3001";
+    const ssoUrl = generateSSOLaunchUrl(
+      targetUrl,
+      {
+        userId: profile.id,
+        email: profile.email,
+        name: profile.displayName || profile.username || "Trader",
+        appName: "forex-pulse",
+      },
+      returnTo || undefined
+    );
+    redirect(ssoUrl);
+  }
 
   redirect("/portal");
 }
