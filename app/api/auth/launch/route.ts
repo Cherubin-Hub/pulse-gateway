@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { gatewayDb } from "@/lib/db";
 import type { TraderProfile } from "@/types/portal";
 
+export const dynamic = "force-dynamic";
+
 const FALLBACK_URLS: Record<string, string> = {
   "forex-pulse": process.env.FOREX_PULSE_URL || "http://localhost:3001",
 };
