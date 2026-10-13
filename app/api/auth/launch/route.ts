@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const returnTo = searchParams.get("returnTo") || undefined;
+
   // 2. Fetch destination application dynamically from database
   let targetUrl: string | null = null;
 
@@ -66,8 +68,13 @@ export async function POST(request: NextRequest) {
     // Fallback if database fails
   }
 
-  if (!targetUrl && FALLBACK_URLS[appSlug]) {
+  // Prioritize environment variable if app is forex-pulse or if targetUrl is pointing to localhost
+  if (appSlug === "forex-pulse" && process.env.FOREX_PULSE_URL) {
+    targetUrl = process.env.FOREX_PULSE_URL;
+  } else if (!targetUrl && FALLBACK_URLS[appSlug]) {
     targetUrl = FALLBACK_URLS[appSlug];
+  } else if (targetUrl?.includes("localhost") && process.env.FOREX_PULSE_URL && appSlug === "forex-pulse") {
+    targetUrl = process.env.FOREX_PULSE_URL;
   }
 
   if (!targetUrl) {
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const launchUrl = generateSSOLaunchUrl(targetUrl, user);
+    const launchUrl = generateSSOLaunchUrl(targetUrl, user, returnTo);
     return NextResponse.json({ launchUrl });
   } catch (err) {
     return NextResponse.json(

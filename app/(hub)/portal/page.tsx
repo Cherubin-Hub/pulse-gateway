@@ -17,7 +17,7 @@ const DEFAULT_APPS: ApplicationItem[] = [
     description:
       "Institutional Risk Engine, High-Impact News Gatekeeper, Multi-Timeframe Screeners & Execution Post-Mortem.",
     icon: "Activity",
-    url: "http://localhost:3001",
+    url: process.env.FOREX_PULSE_URL || "http://localhost:3001",
     isActive: true,
     isComingSoon: false,
     category: "Trading",
@@ -68,17 +68,24 @@ async function getApplications(): Promise<ApplicationItem[]> {
       .order("display_order", { ascending: true });
 
     if (!error && data && data.length > 0) {
-      return data.map((item) => ({
-        id: item.id as string,
-        slug: item.slug as string,
-        name: item.name as string,
-        description: item.description as string,
-        icon: item.icon as ApplicationItem["icon"],
-        url: item.url as string,
-        isActive: Boolean(item.is_active),
-        isComingSoon: Boolean(item.is_coming_soon),
-        category: (item.category as ApplicationItem["category"]) || "Trading",
-      }));
+      return data.map((item) => {
+        let appUrl = item.url as string;
+        if (item.slug === "forex-pulse" && process.env.FOREX_PULSE_URL) {
+          appUrl = process.env.FOREX_PULSE_URL;
+        }
+
+        return {
+          id: item.id as string,
+          slug: item.slug as string,
+          name: item.name as string,
+          description: item.description as string,
+          icon: item.icon as ApplicationItem["icon"],
+          url: appUrl,
+          isActive: Boolean(item.is_active),
+          isComingSoon: Boolean(item.is_coming_soon),
+          category: (item.category as ApplicationItem["category"]) || "Trading",
+        };
+      });
     }
   } catch {
     // Offline fallback

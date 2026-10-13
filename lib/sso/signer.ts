@@ -12,7 +12,8 @@ export interface SignerPayload {
  */
 export function generateSSOLaunchUrl(
   destinationBaseUrl: string,
-  user: SignerPayload
+  user: SignerPayload,
+  returnTo?: string
 ): string {
   const secret = process.env.CROSS_APP_SSO_SECRET;
 
@@ -39,6 +40,9 @@ export function generateSSOLaunchUrl(
   const url = new URL("/api/auth/sso", destinationBaseUrl);
   url.searchParams.set("payload", payloadBase64);
   url.searchParams.set("sig", signature);
+  if (returnTo && returnTo.startsWith("/")) {
+    url.searchParams.set("returnTo", returnTo);
+  }
 
   return url.toString();
 }

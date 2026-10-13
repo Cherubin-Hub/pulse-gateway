@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { loginToGateway, signUpToGateway } from "@/app/actions/gatewayAuth";
 import {
   Layers,
@@ -15,11 +16,16 @@ import {
   ShieldCheck,
   AlertCircle,
   Sparkles,
+  Activity,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function GatewayLoginPage() {
+function GatewayLoginForm() {
+  const searchParams = useSearchParams();
+  const appSlug = searchParams.get("app") || "";
+  const returnTo = searchParams.get("returnTo") || "";
+
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +112,13 @@ export default function GatewayLoginPage() {
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm">
               Institutional Single Sign-On Access Control & Trading Workspaces
             </p>
+
+            {appSlug === "forex-pulse" && (
+              <div className="mt-4 px-3.5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold flex items-center gap-2 text-left">
+                <Activity className="h-4 w-4 shrink-0" />
+                <span>Forex Pulse Workspace: Authenticate below to enter.</span>
+              </div>
+            )}
           </div>
 
           {/* Mode Tabs */}
@@ -142,6 +155,8 @@ export default function GatewayLoginPage() {
 
           {/* Form */}
           <form action={handleSubmit} className="space-y-4">
+            <input type="hidden" name="app" value={appSlug} />
+            <input type="hidden" name="returnTo" value={returnTo} />
             <AnimatePresence mode="wait">
               {isSignUp ? (
                 <motion.div
@@ -381,5 +396,21 @@ export default function GatewayLoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function GatewayLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-xs text-muted-foreground animate-pulse font-mono">
+            Loading Gateway Authentication...
+          </div>
+        </div>
+      }
+    >
+      <GatewayLoginForm />
+    </Suspense>
   );
 }
