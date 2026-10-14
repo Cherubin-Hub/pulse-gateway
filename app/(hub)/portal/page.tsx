@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UserProfileMenu } from "@/components/user-profile-menu";
 import { SystemStatusBar } from "@/components/system-status-bar";
 import { PortalClientGrid } from "@/components/portal-client-grid";
+import { normalizeBaseUrl } from "@/lib/sso/signer";
 
 const DEFAULT_APPS: ApplicationItem[] = [
   {
@@ -17,7 +18,7 @@ const DEFAULT_APPS: ApplicationItem[] = [
     description:
       "Institutional Risk Engine, High-Impact News Gatekeeper, Multi-Timeframe Screeners & Execution Post-Mortem.",
     icon: "Activity",
-    url: process.env.FOREX_PULSE_URL || "http://localhost:3001",
+    url: normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001"),
     isActive: true,
     isComingSoon: false,
     category: "Trading",
@@ -72,6 +73,10 @@ async function getApplications(): Promise<ApplicationItem[]> {
         let appUrl = item.url as string;
         if (item.slug === "forex-pulse" && process.env.FOREX_PULSE_URL) {
           appUrl = process.env.FOREX_PULSE_URL;
+        }
+
+        if (appUrl) {
+          appUrl = normalizeBaseUrl(appUrl);
         }
 
         return {

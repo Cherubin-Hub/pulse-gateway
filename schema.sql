@@ -19,3 +19,15 @@ VALUES
   ('crypto-radar', 'Crypto Radar', 'Order Book Imbalance, Funding Rates, Liquidation Heatmaps, and High-Velocity Volatility Tracking.', 'Flame', '', false, true, 2),
   ('execution-journal', 'Execution Journal', 'Psychology Edge Tracker, Rule Adherence Auditing, and Automated Trade Post-Mortems.', 'BookOpen', '', false, true, 3)
 ON CONFLICT (slug) DO NOTHING;
+
+-- 3. Row Level Security & Public Permissions
+ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read access to applications" ON public.applications;
+CREATE POLICY "Allow public read access to applications" 
+ON public.applications 
+FOR SELECT 
+TO anon, authenticated 
+USING (true);
+
+GRANT SELECT ON public.applications TO anon, authenticated;

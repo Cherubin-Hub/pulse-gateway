@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSSOLaunchUrl } from "@/lib/sso/signer";
+import { generateSSOLaunchUrl, normalizeBaseUrl } from "@/lib/sso/signer";
 import { cookies } from "next/headers";
 import { gatewayDb } from "@/lib/db";
 import type { TraderProfile } from "@/types/portal";
@@ -7,7 +7,7 @@ import type { TraderProfile } from "@/types/portal";
 export const dynamic = "force-dynamic";
 
 const FALLBACK_URLS: Record<string, string> = {
-  "forex-pulse": process.env.FOREX_PULSE_URL || "http://localhost:3001",
+  "forex-pulse": normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001"),
 };
 
 export async function POST(request: NextRequest) {
@@ -72,11 +72,15 @@ export async function POST(request: NextRequest) {
 
   // Prioritize environment variable if app is forex-pulse or if targetUrl is pointing to localhost
   if (appSlug === "forex-pulse" && process.env.FOREX_PULSE_URL) {
-    targetUrl = process.env.FOREX_PULSE_URL;
+    targetUrl = normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001");
   } else if (!targetUrl && FALLBACK_URLS[appSlug]) {
     targetUrl = FALLBACK_URLS[appSlug];
   } else if (targetUrl?.includes("localhost") && process.env.FOREX_PULSE_URL && appSlug === "forex-pulse") {
-    targetUrl = process.env.FOREX_PULSE_URL;
+    targetUrl = normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001");
+  }
+
+  if (targetUrl) {
+    targetUrl = normalizeBaseUrl(targetUrl);
   }
 
   if (!targetUrl) {
