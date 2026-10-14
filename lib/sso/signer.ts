@@ -8,6 +8,25 @@ export interface SignerPayload {
 }
 
 /**
+ * Normalizes a destination application base URL by trimming whitespace,
+ * stripping accidental quotation marks, guaranteeing an http:// or https:// protocol,
+ * and removing trailing slashes.
+ */
+export function normalizeBaseUrl(rawUrl?: string | null, fallback = "http://localhost:3001"): string {
+  if (!rawUrl || typeof rawUrl !== "string") {
+    return fallback;
+  }
+  let url = rawUrl.trim().replace(/^['"`]+|['"`]+$/g, "");
+  if (!url) {
+    return fallback;
+  }
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url.replace(/\/+$/, "");
+}
+
+/**
  * Generates an ephemeral cryptographic SSO URL for handoff to a destination application.
  */
 export function generateSSOLaunchUrl(
@@ -37,7 +56,8 @@ export function generateSSOLaunchUrl(
     .update(payloadBase64)
     .digest("hex");
 
-  const url = new URL("/api/auth/sso", destinationBaseUrl);
+  const cleanBaseUrl = normalizeBaseUrl(destinationBaseUrl, "http://localhost:3001");
+  const url = new URL("/api/auth/sso", cleanBaseUrl);
   url.searchParams.set("payload", payloadBase64);
   url.searchParams.set("sig", signature);
   if (returnTo && returnTo.startsWith("/")) {

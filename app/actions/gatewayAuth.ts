@@ -3,7 +3,7 @@
 import { gatewayDb } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { generateSSOLaunchUrl } from "@/lib/sso/signer";
+import { generateSSOLaunchUrl, normalizeBaseUrl } from "@/lib/sso/signer";
 import type { TraderProfile } from "@/types/portal";
 
 export interface AuthActionResult {
@@ -66,7 +66,7 @@ export async function loginToGateway(formData: FormData): Promise<AuthActionResu
   });
 
   if (appSlug === "forex-pulse") {
-    const targetUrl = process.env.FOREX_PULSE_URL || "http://localhost:3001";
+    const targetUrl = normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001");
     const ssoUrl = generateSSOLaunchUrl(
       targetUrl,
       {
@@ -156,7 +156,7 @@ export async function signUpToGateway(formData: FormData): Promise<AuthActionRes
   });
 
   if (appSlug === "forex-pulse") {
-    const targetUrl = process.env.FOREX_PULSE_URL || "http://localhost:3001";
+    const targetUrl = normalizeBaseUrl(process.env.FOREX_PULSE_URL, "http://localhost:3001");
     const ssoUrl = generateSSOLaunchUrl(
       targetUrl,
       {
