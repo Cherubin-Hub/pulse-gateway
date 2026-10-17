@@ -174,10 +174,21 @@ export async function signUpToGateway(formData: FormData): Promise<AuthActionRes
 }
 
 /**
- * Destroys the Gateway session cookie and redirects to login.
+ * Destroys the Gateway session cookie and initiates Federated Single Sign-Out across connected apps.
  */
 export async function logoutGateway() {
   const cookieStore = await cookies();
   cookieStore.delete("pulse_gateway_user");
-  redirect("/login");
+
+  // Cascades Federated Logout to Forex Pulse (Port 3001) so both sessions are cleared
+  const rawGatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3000";
+  const gatewayUrl = normalizeBaseUrl(rawGatewayUrl, "http://localhost:3000");
+  const gatewayLoginUrl = `${gatewayUrl}/login`;
+
+  const rawForexPulseUrl = process.env.FOREX_PULSE_URL || "http://localhost:3001";
+  const forexPulseUrl = normalizeBaseUrl(rawForexPulseUrl, "http://localhost:3001");
+
+  // Redirect browser to Forex Pulse's logout endpoint which clears fp_gateway_session and bounces to Gateway login
+  const federatedLogoutUrl = `${forexPulseUrl}/api/auth/logout?returnTo=${encodeURIComponent(gatewayLoginUrl)}`;
+  redirect(federatedLogoutUrl);
 }
